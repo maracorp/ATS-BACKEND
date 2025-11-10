@@ -40,8 +40,6 @@ const mutation = new GraphQLObjectType({
         const { user } = context.req;
         const { req } = context;
         console.log("Logging out user:", user);
-        //req.logout();
-        //return user;
         req.logout((err) => {
           if (err) {
             throw new Error("Logout failed");
@@ -80,7 +78,7 @@ const mutation = new GraphQLObjectType({
       type: SongType,
       args: { id: { type: GraphQLID } },
       resolve(parentValue, { id }) {
-        return Song.findByIdAndRemove(id);
+        return Song.findByIdAndDelete(id);
       },
     },
   },
