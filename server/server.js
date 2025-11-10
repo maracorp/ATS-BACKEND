@@ -7,7 +7,6 @@ const session = require("express-session");
 const passport = require("passport");
 const passportConfig = require("./services/auth");
 const MongoStore = require("connect-mongo");
-const { graphqlHTTP } = require("express-graphql");
 
 const app = express();
 
@@ -50,13 +49,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use(
-  "/graphql",
-  graphqlHTTP((req) => ({
-    schema,
-    graphiql: true,
-    context: { req },
-  }))
-);
+// GraphQL endpoint will be configured in index.js with Apollo Server
+// This allows session and passport middleware to run first
 
-module.exports = app;
+module.exports = { app, schema };
