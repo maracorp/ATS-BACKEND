@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const models = require("./models");
 const mongoose = require("mongoose");
@@ -10,11 +11,10 @@ const MongoStore = require("connect-mongo");
 
 const app = express();
 
-// Replace with your Mongo Atlas URI
-const MONGO_URI =
-  "mongodb+srv://nalinisunderrajan:35WvuAG7jwigSU9c@cluster0.xb7gcok.mongodb.net/lyricalauth?retryWrites=true&w=majority&appName=Cluster0";
+// Load MongoDB URI from environment variables
+const MONGO_URI = process.env.MONGODB_URI;
 if (!MONGO_URI) {
-  throw new Error("You must provide a Mongo Atlas URI");
+  throw new Error("MONGODB_URI environment variable is not set. Please check your .env file.");
 }
 
 mongoose.Promise = global.Promise;
@@ -34,11 +34,9 @@ app.use(
   session({
     resave: true,
     saveUninitialized: true,
-    secret: "aaabbbccc",
+    secret: process.env.SESSION_SECRET || "default-secret-change-this",
     store: MongoStore.create({
-      dbName: "lyricalauth",
-      mongoUrl:
-        "mongodb+srv://nalinisunderrajan:35WvuAG7jwigSU9c@cluster0.xb7gcok.mongodb.net/lyricalauth",
+      mongoUrl: process.env.MONGODB_URI,
     }),
   })
 );

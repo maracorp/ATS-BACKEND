@@ -45,10 +45,11 @@ async function startServer() {
     );
 
     // Start Express server
-    app.listen(4000, () => {
-      console.log("🚀 Server ready at http://localhost:4000");
-      console.log("📊 GraphQL endpoint: http://localhost:4000/graphql");
-      console.log("🔍 Apollo Sandbox: http://localhost:4000/graphql");
+    const PORT = process.env.PORT || 4000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server ready at http://localhost:${PORT}`);
+      console.log(`📊 GraphQL endpoint: http://localhost:${PORT}/graphql`);
+      console.log(`🔍 Apollo Sandbox: http://localhost:${PORT}/graphql`);
     });
   } catch (error) {
     console.error("❌ Error starting server:", error);
