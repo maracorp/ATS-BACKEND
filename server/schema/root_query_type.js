@@ -11,22 +11,22 @@ const RootQuery = new GraphQLObjectType({
   fields: () => ({
     songs: {
       type: new GraphQLList(SongType),
-      resolve() {
-        return Song.find({});
+      async resolve() {
+        return await Song.find({}).exec();
       },
     },
     song: {
       type: SongType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve(parentValue, { id }) {
-        return Song.findById(id);
+      async resolve(parentValue, { id }) {
+        return await Song.findById(id).exec();
       },
     },
     lyric: {
       type: LyricType,
       args: { id: { type: new GraphQLNonNull(GraphQLID) } },
-      resolve(parentValue, { id }) {
-        return Lyric.findById(id);
+      async resolve(parentValue, { id }) {
+        return await Lyric.findById(id).exec();
       },
     },
     user: {
