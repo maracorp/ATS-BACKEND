@@ -4,9 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a GraphQL backend application built with Express, Apollo Server, and MongoDB. It implements a lyrical database with user authentication using Passport.js. The application manages songs, lyrics, and user accounts with session-based authentication.
+This is a GraphQL backend application built with Express, Apollo Server 4, and MongoDB. It implements a lyrical database with user authentication using Passport.js. The application manages songs, lyrics, and user accounts with session-based authentication.
 
 ## Development Commands
+
+### Setup Environment Variables
+Before running the application, create a `.env` file from the template:
+```bash
+cp .env.example .env
+```
+Then edit `.env` and fill in your actual MongoDB connection string and other configuration values.
 
 ### Installation
 ```bash
@@ -16,17 +23,26 @@ Note: The `--legacy-peer-deps` flag is required due to dependency compatibility 
 
 ### Running the Application
 ```bash
-npm start              # Production mode (port 4000)
+npm start              # Production mode (port 4000 by default)
 npm run dev            # Development mode with nodemon
 ```
 
-The application runs on `http://localhost:4000` with GraphiQL interface available at `/graphql`.
+The application runs on `http://localhost:4000` (configurable via PORT environment variable) with Apollo Sandbox interface available at `/graphql`.
 
 ## Architecture
 
 ### Application Entry Point
-- `index.js` - Main entry point that starts the Express server on port 4000
-- `server/server.js` - Core Express and Apollo Server configuration
+- `index.js` - Main entry point that configures Apollo Server 4 and starts the Express server
+  - Creates Apollo Server instance with schema
+  - Applies expressMiddleware with CORS and body parser
+  - Configures context to pass request/response objects for authentication
+  - Async startup pattern (required in Apollo Server 4)
+- `server/server.js` - Core Express app configuration with sessions and Passport
+  - Loads environment variables via dotenv
+  - Configures MongoDB connection
+  - Sets up Express sessions with MongoDB store
+  - Initializes Passport middleware
+  - Exports both app and schema for Apollo Server setup
 
 ### Authentication System
 The application uses Passport.js with local strategy for authentication:
@@ -40,8 +56,10 @@ The application uses Passport.js with local strategy for authentication:
 
 ### Session Management
 - Express sessions stored in MongoDB via connect-mongo
-- Session secret and MongoDB connection configured in `server/server.js`
+- Session secret loaded from SESSION_SECRET environment variable
+- MongoDB connection configured via MONGODB_URI environment variable
 - Passport deserializes user from session and attaches to `req.user`
+- Session middleware runs before Apollo Server middleware to ensure authentication context
 
 ### GraphQL Schema Architecture
 The GraphQL schema is organized into separate files:
@@ -65,17 +83,33 @@ Three main Mongoose models with relationships:
 - Songs can optionally reference a user (song.user ObjectId)
 
 ### GraphQL Context
-The GraphQL context includes the Express request object (`context.req`), which provides:
+The GraphQL context includes both request and response objects (`context.req`, `context.res`):
 - `req.user` - Currently authenticated user (populated by Passport)
+- `req` - Full Express request object with session data
+- `res` - Express response object
 - Used in mutations for authentication operations (signup, login, logout)
 - Used in queries to return current user information
+- Context is configured as an async function in Apollo Server expressMiddleware
 
-## Important Configuration Notes
+## Environment Variables
 
-**WARNING**: The MongoDB connection string and session secret are currently hardcoded in `server/server.js`. In production, these should be moved to environment variables:
-- MongoDB Atlas URI (line 16-17)
-- Session secret (line 39)
-- MongoStore connection (line 42-43)
+The application uses the following environment variables (configured in `.env` file):
+
+### Required Variables:
+- **MONGODB_URI** - MongoDB connection string (MongoDB Atlas or local instance)
+  - Example: `mongodb+srv://username:password@cluster.mongodb.net/database`
+- **SESSION_SECRET** - Secret key for Express session encryption
+  - Should be a long random string in production
+
+### Optional Variables:
+- **PORT** - Server port number (default: 4000)
+- **NODE_ENV** - Environment mode (development/production)
+
+### Security Notes:
+- `.env` file is gitignored and never committed to version control
+- Use `.env.example` as a template for required variables
+- Rotate SESSION_SECRET regularly in production
+- Use strong, unique passwords for MongoDB connection
 
 ## Node Version Requirement
 Requires Node.js >= 18.x (specified in package.json engines field)
