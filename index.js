@@ -31,9 +31,9 @@ async function startServer() {
     app.use(
       "/graphql",
       cors({
-        origin: ["http://localhost:3000", "http://localhost:4000"],
-        credentials: true, // Allow cookies for sessions
-      }),
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    credentials: true,
+  }),
       bodyParser.json(),
       expressMiddleware(server, {
         context: async ({ req, res }) => {
