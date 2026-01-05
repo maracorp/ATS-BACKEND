@@ -1,8 +1,12 @@
 require("dotenv").config();
 const express = require("express");
+const models = require("./models");
 const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
+const schema = require("./schema/schema");
 const session = require("express-session");
 const passport = require("passport");
+const passportConfig = require("./services/auth");
 const MongoStore = require("connect-mongo");
 
 const app = express();
@@ -10,33 +14,50 @@ const app = express();
 /* 🔑 REQUIRED FOR RENDER */
 app.set("trust proxy", 1);
 
-/* MongoDB */
-mongoose.connect(process.env.MONGODB_URI);
-mongoose.connection.once("open", () =>
-  console.log("Connected to Mongo Atlas instance.")
-);
+// Load MongoDB URI from environment variables
+const MONGO_URI = process.env.MONGODB_URI;
+if (!MONGO_URI) {
+  throw new Error("MONGODB_URI environment variable is not set. Please check your .env file.");
+}
 
-/* 🔑 SESSION CONFIG (FINAL) */
+mongoose.Promise = global.Promise;
+mongoose.connect(MONGO_URI);
+mongoose.connection
+  .once("open", () => console.log("Connected to Mongo Atlas instance."))
+  .on("error", (error) =>
+    console.log("Error connecting to Mongo Atlas:", error)
+  );
+
+// Configures express to use sessions.  This places an encrypted identifier
+// on the users cookie.  When a user makes a request, this middleware examines
+// the cookie and modifies the request object to indicate which user made the request
+// The cookie itself only contains the id of a session; more data about the session
+// is stored inside of MongoDB.
 app.use(
   session({
     name: "sid",
-    secret: process.env.SESSION_SECRET || "default-secret-change-this",
     resave: false,
     saveUninitialized: false,
+    secret: process.env.SESSION_SECRET || "default-secret-change-this",
     store: MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
     }),
     cookie: {
       httpOnly: true,
-      secure: true,      // HTTPS only
-      sameSite: "none",  // cross-origin (Vercel → Render)
-      maxAge: 1000 * 60 * 60 * 24 * 7,
+      secure: true,      // 🔑 REQUIRED (Render = HTTPS)
+      sameSite: "none",  // 🔑 REQUIRED (cross-origin)
+     // maxAge: 1000 * 60 * 60 * 24 * 7, // optional (7 days)
     },
   })
 );
 
-/* Passport */
+// Passport is wired into express as a middleware. When a request comes in,
+// Passport will examine the request's session (as set by the above config) and
+// assign the current user to the 'req.user' object.  See also servces/auth.js
 app.use(passport.initialize());
 app.use(passport.session());
 
-module.exports = { app };
+// GraphQL endpoint will be configured in index.js with Apollo Server
+// This allows session and passport middleware to run first
+
+module.exports = { app, schema };
