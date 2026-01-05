@@ -25,27 +25,51 @@ async function startServer() {
     await server.start();
     console.log("✅ Apollo Server started successfully");
 
+     app.use(
+  cors({
+   origin: (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
+      .split(",")
+      .map(o => o.trim()),
+    credentials: true,
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// 🔑 HANDLE PREFLIGHT EXPLICITLY
+app.options("*", cors());
+
+
     // Apply Apollo middleware to Express app
     // IMPORTANT: This runs AFTER session and passport middleware
     // which are already configured in server/server.js
-    app.use(
-      "/graphql",
-      cors({
-    origin: (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
-  .split(",")
-  .map(o => o.trim()),
-    credentials: true,
-  }),
-      bodyParser.json(),
-      expressMiddleware(server, {
-        context: async ({ req, res }) => {
-          // Pass request and response to GraphQL context
-          // This makes req.user (from Passport) available in resolvers
-          return { req, res };
-        },
-      })
-    );
+  //   app.use(
+  //     "/graphql",
+  //     cors({
+  //   origin: (process.env.ALLOWED_ORIGINS || "http://localhost:3000")
+  // .split(",")
+  // .map(o => o.trim()),
+  //   credentials: true,
+  //       methods: ["GET", "POST", "OPTIONS"],
+  //   allowedHeaders: ["Content-Type", "Authorization"],
+  // }),
+  //     bodyParser.json(),
+  //     expressMiddleware(server, {
+  //       context: async ({ req, res }) => {
+  //         // Pass request and response to GraphQL context
+  //         // This makes req.user (from Passport) available in resolvers
+  //         return { req, res };
+  //       },
+  //     })
+  //   );
 
+    app.use(
+  "/graphql",
+  bodyParser.json(),
+  expressMiddleware(server, {
+    context: async ({ req, res }) => ({ req, res }),
+  })
+);
     // Start Express server
     const PORT = process.env.PORT || 4000;
     app.listen(PORT, () => {
