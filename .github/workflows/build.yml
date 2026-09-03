@@ -1,4 +1,4 @@
-name: Build MARA Backend
+name: Build and Push MARA Backend
 
 on:
   push:
@@ -7,14 +7,39 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
-    name: Build Docker Image
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::263998146269:role/GitHubActions-MARA-ECR
+          aws-region: eu-north-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Build Docker image
-        run: docker build -t mara-backend .
+        run: |
+          docker build -t mara-backend .
+
+      - name: Tag Docker image
+        run: |
+          docker tag mara-backend:latest \
+            263998146269.dkr.ecr.eu-north-1.amazonaws.com/mara/ats-backend:latest
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push \
+            263998146269.dkr.ecr.eu-north-1.amazonaws.com/mara/ats-backend:latest
