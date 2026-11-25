@@ -33,6 +33,14 @@ async function startServer() {
     })
   );
 
+  //added for AWS ALB health check
+  app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "mara-backend"
+  });
+});
+
   const PORT = process.env.PORT || 4000;
   app.listen(PORT, () => {
     console.log(`🚀 Server ready on port ${PORT}`);
